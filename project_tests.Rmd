@@ -1,0 +1,327 @@
+---
+title: "project_tests"
+author: "Group 2"
+date: "5/8/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+# Permutation testing 
+
+finch_1975 <- read.csv('finch_beaks_1975.csv', sep = ',', header = TRUE)
+finch_2012 <- read.csv('finch_beaks_2012.csv', sep = ',', header = TRUE)
+
+blength_1975 <- finch_1975[, 3]
+blength_2012 <- finch_2012[, 3]
+bdepth_1975 <- finch_1975[, 4]
+bdepth_2012 <- finch_2012[, 4]
+
+# Difference in means
+blength_diff <- mean(blength_1975) - mean(blength_2012)
+blength_diff
+
+bdepth_diff <- mean(bdepth_1975) - mean(bdepth_2012)
+bdepth_diff
+
+# Running permutation test for beak lengths 
+library(MKinfer)
+perm.t.test(blength_1975, blength_2012, mu = 0, conf.level = 0.95)
+
+# Running permutation test for beak depths 
+perm.t.test(bdepth_1975, bdepth_2012, mu = 0, conf.level = 0.95)
+
+```
+
+
+```{r}
+
+# Hypothesis Testing
+
+# Checking normality
+qqnorm(blength_1975)
+qqline(blength_1975)
+
+qqnorm(blength_2012)
+qqline(blength_2012)
+
+t.test(blength_1975, blength_2012, alternative =
+        "two.sided", var.equal = TRUE)
+
+# Testing equality of variances
+library(testequavar)
+equa2vartest(blength_1975, blength_2012, 0.05, B = 5000)
+
+# Checking normality
+qqnorm(bdepth_1975)
+qqline(bdepth_1975)
+
+qqnorm(bdepth_2012)
+qqline(bdepth_2012)
+
+t.test(bdepth_1975, bdepth_2012, alternative =
+        "two.sided", var.equal = TRUE)
+
+# Testing equality of variances
+library(testequavar)
+equa2vartest(bdepth_1975, bdepth_2012, 0.05, B = 5000)
+
+```
+
+```{r}
+
+# Bootstrap test
+
+thetahat <- mean(bdepth_1975) - mean(bdepth_2012)
+nx <- length(bdepth_1975)  #nx
+ny <- length(bdepth_2012)  #ny=23
+SE <- sqrt(var(bdepth_1975)/nx + var(bdepth_2012)/ny)
+
+N <- 10000
+Tstar <- numeric(N)
+set.seed(0)
+
+for(i in 1:N)
+ {
+  bootx <- sample(bdepth_1975, nx, replace = TRUE)
+  booty <- sample(bdepth_2012, ny, replace = TRUE)
+  Tstar[i] <- (mean(bootx) - mean(booty) - thetahat) /
+               sqrt(var(bootx)/nx + var(booty)/ny)
+ }
+
+thetahat - quantile(Tstar, c(.975, .025)) * SE
+
+t.test(bdepth_1975, bdepth_2012)$conf
+
+# Bootstrapping confidence interval shows on average beak depth 2012 is higher 
+# than beak depth in 1975
+
+thetahat <- mean(blength_1975) - mean(blength_2012)
+nx <- length(blength_1975)  #nx
+ny <- length(blength_2012)  #ny
+SE <- sqrt(var(blength_1975)/nx + var(blength_2012)/ny)
+
+N <- 10000
+Tstar <- numeric(N)
+set.seed(0)
+
+for(i in 1:N)
+ {
+  bootx <- sample(blength_1975, nx, replace = TRUE)
+  booty <- sample(blength_2012, ny, replace = TRUE)
+  Tstar[i] <- (mean(bootx) - mean(booty) - thetahat) /
+               sqrt(var(bootx)/nx + var(booty)/ny)
+ }
+
+thetahat - quantile(Tstar, c(.975, .025)) * SE
+
+t.test(blength_1975, blength_2012)$conf
+
+
+```
+
+```{r}
+
+library(dbplyr)
+
+# Importing and Cleaning data
+F1975 <-read.csv('finch_beaks_1975.csv')
+
+
+# Separate into beak length and depth for each species
+
+# Fortis 1975
+blfort75<-subset(F1975, species == 'fortis', select = Beak.length..mm)
+
+bdfort75 <-subset(F1975, species == 'fortis', select = Beak.depth..mm)
+
+# Scandens 1975
+blscan75<-subset(F1975, species == 'scandens', select = Beak.length..mm)
+
+bdscan75 <-subset(F1975, species == 'scandens', select = Beak.depth..mm)
+
+# Fortis 2012
+F2012 <-read.csv('finch_beaks_2012.csv')
+blfort12<-subset(F2012, species == 'fortis', select = blength)
+
+bdfort12 <-subset(F2012, species == 'fortis', select = bdepth)
+
+# Scandens 2012
+blscan12<-subset(F2012, species == 'scandens', select = blength)
+
+bdscan12 <-subset(F2012, species == 'scandens', select = bdepth)
+
+```
+
+```{r}
+
+# Data Table with Fortis Beak Length comparison
+Fort.BLength75 <-c(sum(blfort75[, 1] >= 8.5 & blfort75[, 1] <= 9.625), 
+                     sum(blfort75[,1] >=9.63 & blfort75[, 1] <= 10.745), 
+                     sum(blfort75[,1] >=10.75 & blfort75[, 1] <= 11.87),
+                     sum(blfort75[,1] >= 11.875 & blfort75[,1]<= 13))
+
+Fort.BLength12 <-c(sum(blfort12[, 1] >= 8.5 & blfort12[, 1] <= 9.625),
+                     sum(blfort12[, 1] >= 9.63 & blfort12[, 1]<= 10.745),
+                     sum(blfort12[,1] >= 10.75 & blfort12[, 1] <= 11.87),
+                     sum(blfort12[,1] >= 11.875 & blfort12[,1]<= 13))
+
+chiblfort <-data.frame(Fort.BLength75,Fort.BLength12)
+rownames(chiblfort) <-c("8.5-9.625mm", "9.63-10.745mm", 
+                        "10.75-11.87mm", "11.875-13mm")
+```
+
+```{r}
+
+# Data Table with Fortis Beak Depth comparison
+Fort.BDepth75 <-c(sum(bdfort75[, 1] >= 7 & bdfort75[, 1] <= 8.12),
+                    sum(bdfort75[, 1] >= 8.125 & bdfort75[, 1] <= 9.245),
+                    sum(bdfort75[, 1] >= 9.25 & bdfort75[, 1]<= 10.37),
+                    sum(bdfort75[, 1] >= 10.375 & bdfort75[, 1]<= 11.5))
+
+Fort.BDepth12 <-c(sum(bdfort12[, 1] >= 7 & bdfort12[, 1] <= 8.12), 
+                    sum(bdfort12[, 1] >= 8.125 & bdfort12[, 1] <= 9.245),
+                    sum(bdfort12[, 1] >= 9.25 & bdfort12[, 1] <= 10.37),
+                    sum(bdfort12[, 1] >= 10.375 & bdfort12[, 1]<= 11.5))
+
+chibdfort <-data.frame(Fort.BDepth75,Fort.BDepth12)
+rownames(chibdfort) <-c("7-8.12mm", "8.125-9.245mm",
+                        "9.25-10.37mm", "10.375-11.5mm")
+
+
+```
+
+```{r}
+
+# Data Table with Scandens Beak Length comparison
+Scan.BLength75 <-c(sum(blscan75[, 1] >= 11 & blscan75[, 1] <= 12.2), 
+                     sum(blscan75[, 1] >= 12.25 & blscan75[, 1] <= 13.45), 
+                     sum(blscan75[, 1] >= 13.5 & blscan75[, 1] <= 14.7),
+                     sum(blscan75[,1] >= 14.75 & blscan75[, 1] <= 16))
+
+Scan.BLength12 <-c(sum(blscan12[, 1] >= 11 & blscan12[, 1] <= 12.2),
+                     sum(blscan12[, 1] >= 12.25 & blscan12[, 1] <= 13.45),
+                     sum(blscan12[, 1] >= 13.5 & blscan12[, 1] <= 14.7),
+                     sum(blscan12[, 1] >= 14.75 & blscan12[, 1] <= 16))
+
+chiblscan <-data.frame(Scan.BLength75,Scan.BLength12)
+rownames(chiblscan) <-c("11-12.2mm", "12.25-13.45mm",
+                        "13.5-14.7mm", "14.75-16mm")
+```
+
+```{r}
+
+# Data Table with Scandens Beak Depth comparison
+Scan.BDepth75 <-c(sum(bdscan75[, 1] >= 7.5 & bdscan75[, 1] <= 8.37), 
+                    sum(bdscan75[, 1] >= 8.375 & bdscan75[, 1] <= 9.245), 
+                    sum(bdscan75[, 1] >= 9.25 & bdscan75[, 1] <= 10.12),
+                    sum(bdscan75[, 1] >= 10.125 & bdscan75[, 1] <= 11))
+
+Scan.BDepth12 <-c(sum(bdscan12[, 1] >= 7.5 & bdscan12[, 1] <= 8.37), 
+                    sum(bdscan12[, 1] >= 8.375 & bdscan12[, 1] <= 9.245), 
+                    sum(bdscan12[, 1] >= 9.25 & bdscan12[, 1] <= 10.12),
+                    sum(bdscan12[, 1] >= 10.125 & bdscan12[, 1] <= 11))
+
+chibdscan <-data.frame(Scan.BDepth75,Scan.BDepth12)
+rownames(chibdscan) <-c("7.5-8.37mm","8.375-9.245mm",
+                        "9.25-10.12mm","10.125-11mm")
+
+```
+
+```{r}
+
+listofDF <-list(
+  "Beak Length of Fortis 1972 & 2012"=chiblfort,
+  "Beak Depth of Fortis 1972 & 2012"=chibdfort,
+  "Beak Length of Scandens 1972 & 2012"=chiblscan,
+  "Beak Depth of Scandens 1972 & 2012"=chibdscan
+  )
+
+listofDF
+lapply(listofDF, fisher.test)
+
+```
+
+```{r}
+
+
+# Checking normality of beak lengths
+qqnorm(blength_1975)
+qqline(blength_1975)
+
+qqnorm(blength_2012)
+qqline(blength_2012)
+
+var.test(blength_1975, blength_2012)
+boot.t.test(blength_1975, blength_2012)
+
+# Checking normality of beak depth
+qqnorm(bdepth_1975)
+qqline(bdepth_1975)
+
+qqnorm(bdepth_2012)
+qqline(bdepth_2012)
+
+var.test(bdepth_1975, bdepth_2012)
+t.test(bdepth_1975, bdepth_2012)
+
+```
+
+```{r}
+
+# Running CCA using chi square test variables
+
+library(CCA)
+
+length_cca <- cc(chiblfort, chiblscan)
+depth_cca <- cc(chibdfort, chibdscan)
+
+```
+
+```{r}
+
+# Plotting beak length variable weights
+
+plt.cc(length_cca, type = 'v', var.label = TRUE)
+plt.cc(depth_cca, type = 'v', var.label = TRUE)
+
+```
+
+```{r}
+
+# Performing PCA
+
+fortisLength_pc <- princomp(chiblfort)
+fortisDepth_pc <- princomp(chibdfort)
+
+scanLength_pc <- princomp(chiblscan)
+scanDepth_pc <- princomp(chibdscan)
+
+```
+
+```{r}
+
+# Exploring PCA results
+
+summary(fortisLength_pc)
+summary(fortisDepth_pc)
+
+summary(scanLength_pc)
+summary(scanDepth_pc)
+
+```
+
+```{r}
+
+# Creating biplots
+
+biplot(fortisLength_pc, col = c(1,2),
+       xlab = "Component 1", ylab = "Component 2")
+
+
+
+```
